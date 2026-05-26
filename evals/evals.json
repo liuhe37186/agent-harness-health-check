@@ -1,0 +1,75 @@
+{
+  "skill_name": "agent-harness-health-check",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请对一个“Agent Harness 体检技能”方案做自审。已知它声称自己会检查 workflow 与 agent 边界、tool contract、risk tier / trust level、checkpoint / resume、trace / replay、HITL、eval harness 与 release gate，并输出整改报告。请你从技能设计角度判断：这种技能要想真正可落地，最少必须具备哪些审计能力、哪些结论必须坚持写成待确认、哪些系统级缺口最容易被漏掉。输出一份完整体检报告。",
+      "expected_output": "输出一份结构完整的体检报告，包含范围、执行摘要、总评分卡、逐项体检、P0/P1/P2 整改路线、最小可上线方案和待确认项；能指出这种审计技能的必要能力边界，并明确哪些判断在缺少真实代码、trace、配置时只能写为待确认。",
+      "files": [],
+      "expectations": [
+        "输出包含“体检范围”或等价章节，并明确说明这是对技能方案而非真实运行中 Agent 系统的审计",
+        "输出包含“执行摘要”或等价章节，并给出总体成熟度判断",
+        "输出包含“总评分卡”或等价表述，而不是只给散点建议",
+        "输出明确写出至少 2 类在缺少真实代码、trace、配置或运行证据时必须标为“待确认”的判断",
+        "输出明确指出“主恢复面”或“decision record”至少一个属于容易遗漏的系统级缺口",
+        "输出明确区分 `risk tier` 与 `trust level` 不是同一件事",
+        "输出包含 `P0`、`P1`、`P2` 三档整改优先级",
+        "输出包含“最小可上线方案”或等价表述",
+        "输出不能把题目里只是“声称会检查”的能力，直接写成已经具备真实运行证据",
+        "输出中的至少 2 条整改动作要能回扣到前面明确指出的具体缺口，而不是泛泛写“建议增强治理”"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "某团队现在只有架构文档，没有完整代码仓库。文档里写了这些设计：1）系统会支持 checkpoint 和 resume；2）高风险动作前会有人审；3）会记录 trace；4）将来会建设 regression eval。请你只基于这些文字描述，对这个 Agent 方案做一次 Harness 体检，判断它距离“可受控上线”还差什么。注意：不要把规划中的能力当成已实现能力。",
+      "expected_output": "输出一份偏文档型的体检报告，能够明确区分“文档中提出的设计”和“真正有证据的已实现能力”，并在报告里给出待确认项、P0/P1/P2 整改建议，以及一条从方案设计走到受控上线的最小落地路径。",
+      "files": [],
+      "expectations": [
+        "输出明确说明本次判断主要基于文档描述而非代码或运行证据",
+        "输出把 `checkpoint / resume`、`审批`、`trace`、`regression eval` 中至少 3 项标成“待确认”或明确说明尚无实现证据",
+        "输出没有把“文档里计划建设 regression eval”直接表述为“已有发布门禁”",
+        "输出至少指出 1 个与恢复有关的缺口，例如主恢复面、interrupt schema、pending action 或恢复语义",
+        "输出至少指出 1 个与审批或人审有关的缺口，例如确认框不等于 HITL runtime",
+        "输出至少指出 1 个与评测或发布有关的缺口，例如只有规划没有 safety eval / regression gate",
+        "输出包含从方案设计走到“可受控上线”的整改路径，而不是只重复文档内容",
+        "输出至少要把题目中给出的 4 个文档设计点中的 2 个，明确引用为“仅有规划、尚无实现证据”的判断依据",
+        "输出不能一边写“缺少代码和运行证据”，一边又把同一项能力判成“符合”"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我们有一个会读写文件、执行命令、发 HTTP 请求的 coding agent。现在最头疼的问题是：任务一旦中断，团队经常靠重新发一次请求来继续；高风险动作只有确认框；工具只分了高危和低危，没有单独定义 trust level；安全评测也只做了普通回归。请你做一次专项体检，重点帮我判断它为什么还只能 demo，不能受控上线。",
+      "expected_output": "输出一份专项诊断报告，能够识别出主恢复面缺失、risk tier 与 trust level 未分离、审批缺少运行时语义、缺少 safety eval 等系统级问题，并给出 P0 级整改动作，让系统先达到“可受控上线”的最低要求。",
+      "files": [],
+      "expectations": [
+        "输出明确把“重新发一次请求来继续”识别为恢复设计缺口，而不是当成正常 resume 能力",
+        "输出明确指出缺少 `trust level`，不能只靠高危 / 低危这种 `risk tier` 分层",
+        "输出明确指出“确认框”不等于正式的 HITL / approval runtime",
+        "输出明确指出“普通回归”不足以覆盖 safety eval 或 policy stress testing",
+        "输出把上述至少 2 项提升为系统级问题，而不是只列零散症状",
+        "输出给出至少 3 条 `P0` 级整改动作",
+        "输出的整改动作中至少 1 条与恢复面 / checkpoint / interrupt schema 有关",
+        "输出的整改动作中至少 1 条与 approval runtime 或 safety eval 有关",
+        "输出至少要把题目中给出的 4 个已知症状中的 3 个，逐一映射到对应的架构缺口，而不是只笼统说“治理不足”",
+        "输出不能遗漏“会执行命令和发 HTTP 请求”带来的副作用或执行边界风险"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我们把系统拆成了 planner、researcher、executor 三个 agent。现在经常出现 handoff 之后丢上下文、审批回来恢复到错误节点、人工 override 也说不清为什么能继续执行。已知当前系统只有共享聊天历史，没有结构化 handoff artifact；也没有正式的 decision record。请你做一次 multi-agent Harness 体检，重点看 ownership、handoff artifact、resume decision 和回归门禁。",
+      "expected_output": "输出一份 multi-agent 专项体检报告，能识别 handoff artifact、ownership 连续性、resume decision record、HITL 恢复语义和回归样本缺口，并给出能够减少错节点恢复和不可解释 override 的整改建议。",
+      "files": [],
+      "expectations": [
+        "输出明确指出只有共享聊天历史、不具备结构化 handoff artifact，会导致多 Agent 交接不稳定",
+        "输出明确指出 ownership 连续性或 handoff 边界是问题核心之一",
+        "输出明确指出缺少 decision record 会让 override 或 resume 不可解释、不可审计",
+        "输出明确指出审批回来恢复到错误节点，说明恢复语义或主恢复面存在缺口",
+        "输出至少给出 1 条与 handoff artifact 有关的整改动作",
+        "输出至少给出 1 条与 decision record / evidence refs / policy version 有关的整改动作",
+        "输出至少给出 1 条与多 Agent 回归样本或 release gate 有关的整改动作",
+        "输出至少要把题目中给出的 3 个现象与 3 类不同根因建立对应关系，例如 handoff、恢复、审计解释性",
+        "输出不能只批评 shared history 不足，还需要说明为什么仅靠 shared history 无法稳定承载 ownership 或恢复节点定位"
+      ]
+    }
+  ]
+}

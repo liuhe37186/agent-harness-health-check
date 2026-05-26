@@ -1,0 +1,258 @@
+{
+  "meta": {
+    "skill_name": "agent-harness-health-check",
+    "version": "1.5.0",
+    "evaluator": "Claude",
+    "evaluation_date": "2026-05-25",
+    "scope": "评估 Agent Harness 体检技能在典型场景下的诊断质量、证据纪律与整改建议质量",
+    "summary": "本轮覆盖 2 个场景，用于对比技能启用版与基线版的诊断结果。",
+    "audit_target": "示例 Agent 系统"
+  },
+  "configs": [
+    {
+      "key": "with_skill",
+      "label": "技能启用版",
+      "description": "启用 agent-harness-health-check 后的诊断结果"
+    },
+    {
+      "key": "without_skill",
+      "label": "基线版",
+      "description": "不启用技能时的普通输出"
+    }
+  ],
+  "evals": [
+    {
+      "id": "eval-001",
+      "title": "文档型 Harness 体检",
+      "prompt": "某团队现在只有架构文档，没有完整代码仓库。文档里写了这些设计：1）系统会支持 checkpoint 和 resume；2）高风险动作前会有人审；3）会记录 trace；4）将来会建设 regression eval。请你只基于这些文字描述，对这个 Agent 方案做一次 Harness 体检，判断它距离可受控上线还差什么。",
+      "expected_output": "能区分规划与已实现能力，输出待确认项、整改优先级和最小落地路径。",
+      "summary": "验证技能是否能在证据不足时保持证据纪律。",
+      "assertions": [
+        {
+          "text": "不会把规划中的能力误判成已实现"
+        },
+        {
+          "text": "能明确给出待确认项"
+        },
+        {
+          "text": "能提出可落地整改路径"
+        }
+      ],
+      "runs": [
+        {
+          "config_key": "with_skill",
+          "summary": "正确区分了文档规划与实现证据，指出恢复、审批与评测门禁的关键缺口。",
+          "outputs": [
+            {
+              "label": "REPORT",
+              "content": "示例输出摘录：当前材料仅能证明存在设计意图，不能证明已具备正式 checkpoint/resume、HITL runtime 或 regression gate。P0 建议统一主恢复面并建立正式 approval runtime。"
+            }
+          ],
+          "formal_grades": [
+            {
+              "text": "不会把规划中的能力误判成已实现",
+              "passed": true,
+              "evidence": "明确写出 checkpoint / resume / trace / regression eval 仍缺实现证据。"
+            },
+            {
+              "text": "能明确给出待确认项",
+              "passed": true,
+              "evidence": "单列了待确认项与需要补充的材料。"
+            },
+            {
+              "text": "能提出可落地整改路径",
+              "passed": true,
+              "evidence": "给出 P0/P1/P2 及最小可上线方案。"
+            }
+          ],
+          "findings": [
+            {
+              "severity": "P0",
+              "title": "主恢复面缺失",
+              "detail": "材料只描述会支持 resume，没有定义正式 continuation surface。",
+              "remediation": "统一 checkpoint + state 作为主恢复面，并保存 pending_action/current_step。"
+            },
+            {
+              "severity": "P1",
+              "title": "审批仍停留在设计意图",
+              "detail": "文档只说明有人审，没有证明存在运行时 pause/approve/reject/resume 状态机。",
+              "remediation": "将 approval 设计成运行时原语并记录 decision log。"
+            }
+          ],
+          "audit_result": {
+            "maturity_stage": "概念验证",
+            "confidence": "中",
+            "domain_verdicts": [
+              {
+                "domain": "状态与恢复",
+                "verdict": "不符合",
+                "risk": "P0"
+              },
+              {
+                "domain": "安全与人工接管",
+                "verdict": "部分符合",
+                "risk": "P1"
+              },
+              {
+                "domain": "评测与发布门禁",
+                "verdict": "不符合",
+                "risk": "P1"
+              }
+            ]
+          },
+          "metrics": {
+            "duration_ms": 18200,
+            "tokens": 12000
+          }
+        },
+        {
+          "config_key": "without_skill",
+          "summary": "把文档里的计划表述成了现有能力，建议比较泛。",
+          "outputs": [
+            {
+              "label": "REPORT",
+              "content": "示例输出摘录：系统已经具备 checkpoint 和 trace 设计，高风险动作有人审核，后续只需补充一些测试。"
+            }
+          ],
+          "formal_grades": [
+            {
+              "text": "不会把规划中的能力误判成已实现",
+              "passed": false,
+              "evidence": "将文档中的未来能力直接写成已经具备。"
+            },
+            {
+              "text": "能明确给出待确认项",
+              "passed": false,
+              "evidence": "没有输出待确认项。"
+            },
+            {
+              "text": "能提出可落地整改路径",
+              "passed": false,
+              "evidence": "建议仅停留在“补充测试”。"
+            }
+          ],
+          "findings": [
+            {
+              "severity": "P1",
+              "title": "整改建议过于泛化",
+              "detail": "没有明确运行时恢复、审批语义和回归门禁的具体改法。",
+              "remediation": "补充基于缺口的一一对应整改动作。"
+            }
+          ],
+          "audit_result": {
+            "maturity_stage": "可内测",
+            "confidence": "低",
+            "domain_verdicts": [
+              {
+                "domain": "状态与恢复",
+                "verdict": "部分符合",
+                "risk": "P1"
+              }
+            ]
+          },
+          "metrics": {
+            "duration_ms": 9600,
+            "tokens": 6400
+          }
+        }
+      ]
+    },
+    {
+      "id": "eval-002",
+      "title": "Coding Agent 专项体检",
+      "prompt": "我们有一个会读写文件、执行命令、发 HTTP 请求的 coding agent。现在最头疼的问题是：任务一旦中断，团队经常靠重新发一次请求来继续；高风险动作只有确认框；工具只分了高危和低危，没有单独定义 trust level；安全评测也只做了普通回归。请你做一次专项体检，重点帮我判断它为什么还只能 demo，不能受控上线。",
+      "expected_output": "识别主恢复面、approval runtime、trust governance 和 safety eval 的系统级缺口，并给出 P0 动作。",
+      "summary": "验证技能是否能把症状映射为架构缺口，并保持整改建议可执行。",
+      "assertions": [
+        {
+          "text": "能将重新发请求识别为恢复设计缺口"
+        },
+        {
+          "text": "能识别 trust level 缺失"
+        },
+        {
+          "text": "能提出 P0 级整改动作"
+        }
+      ],
+      "runs": [
+        {
+          "config_key": "with_skill",
+          "summary": "准确识别恢复面、审批语义、工具放权和安全门禁问题，并给出三条 P0 动作。",
+          "outputs": [
+            {
+              "label": "REPORT",
+              "content": "示例输出摘录：当前系统主要问题不是模型能力，而是没有主恢复面、approval runtime 和独立 safety eval。重新发请求不是 resume。"
+            }
+          ],
+          "formal_grades": [
+            {
+              "text": "能将重新发请求识别为恢复设计缺口",
+              "passed": true,
+              "evidence": "明确指出重新发请求只是重跑，不构成 runtime continuation。"
+            },
+            {
+              "text": "能识别 trust level 缺失",
+              "passed": true,
+              "evidence": "指出 risk tier 不能替代 trust governance。"
+            },
+            {
+              "text": "能提出 P0 级整改动作",
+              "passed": true,
+              "evidence": "给出主恢复面、approval runtime、safety eval 三条 P0。"
+            }
+          ],
+          "findings": [
+            {
+              "severity": "P0",
+              "title": "恢复能力停留在重跑层",
+              "detail": "中断后靠重新发请求恢复，说明没有正式 continuation surface。",
+              "remediation": "引入 checkpoint/state schema，并在 resume 时验证 current_step 与 pending_action。"
+            },
+            {
+              "severity": "P0",
+              "title": "高风险动作缺少运行时审批语义",
+              "detail": "确认框不等于 pause/approve/reject/resume。",
+              "remediation": "建立 approval runtime、decision log 和 override 审计记录。"
+            },
+            {
+              "severity": "P1",
+              "title": "工具治理只有风险层没有信任层",
+              "detail": "读写文件、执行命令和 HTTP 工具具有明显副作用，但未按 trust level 做长期放权治理。",
+              "remediation": "同时定义 risk_tier 与 trust_level，并限制 roots 与外部副作用边界。"
+            }
+          ],
+          "audit_result": {
+            "maturity_stage": "概念验证",
+            "confidence": "高",
+            "domain_verdicts": [
+              {
+                "domain": "工具与放权治理",
+                "verdict": "不符合",
+                "risk": "P0"
+              },
+              {
+                "domain": "状态与恢复",
+                "verdict": "不符合",
+                "risk": "P0"
+              },
+              {
+                "domain": "评测与发布门禁",
+                "verdict": "部分符合",
+                "risk": "P1"
+              }
+            ]
+          },
+          "metrics": {
+            "duration_ms": 21100,
+            "tokens": 14900
+          }
+        }
+      ]
+    }
+  ],
+  "benchmark": {
+    "observations": [
+      "技能启用版在证据纪律、系统级问题识别和整改落地性方面更稳定。"
+    ]
+  }
+}
